@@ -12,6 +12,7 @@ services:
       - "3307:3306"
     volumes:
       - database_data:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d
 
   mongodb:
     image: mongo:7
@@ -21,6 +22,42 @@ services:
       - "27018:27017"
     volumes:
       - mongodb_data:/data/db
+
+  backend:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: habit_tracker_backend
+    restart: always
+    volumes:
+      - ../habit-tracker-api:/var/www/backend
+    depends_on:
+      - database
+      - mongodb
+
+  nginx:
+    image: nginx:alpine
+    container_name: habit_tracker_nginx
+    restart: always
+    ports:
+      - "8000:80"
+    volumes:
+      - ../habit-tracker-api:/var/www/backend
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - backend
+
+  frontend:
+    image: node:20-alpine
+    container_name: habit_tracker_frontend
+    working_dir: /app
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    volumes:
+      - ../habit-tracker:/app
+    ports:
+      - "5173:5173"
+    depends_on:
+      - nginx
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
