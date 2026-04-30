@@ -31,6 +31,7 @@ services:
     restart: always
     volumes:
       - ../habit-tracker-api:/var/www/backend
+    command: sh -c "composer install && php-fpm"
     depends_on:
       - database
       - mongodb
